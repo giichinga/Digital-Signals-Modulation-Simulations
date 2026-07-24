@@ -1,6 +1,7 @@
-import numpy as np
-import matplotlib.pyplot as plt
-from scipy.special import erfc
+import numpy as np # type: ignore[import-not-found]
+import matplotlib.pyplot as plt # type: ignore[import-not-found]
+from scipy.special import erfc # type: ignore[import-not-found]
+
 
 def qpsk_modulate(bits):
     # Step 1: split bits into I and Q streams

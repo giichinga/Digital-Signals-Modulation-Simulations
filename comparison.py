@@ -1,20 +1,8 @@
-"""
-comparison.py
-=============
-Combines BPSK, QPSK and 16-QAM simulations on one plot.
-This is your first major project deliverable.
+import numpy as np # type: ignore[import-not-found]
+import matplotlib.pyplot as plt # type: ignore[import-not-found]
+from scipy.special import erfc # type: ignore[import-not-found]
 
-Run it:
-    python comparison.py
-
-Make sure BPSK.py, QPSK.py and QAM16.py are in the same folder.
-"""
-
-import numpy as np
-import matplotlib.pyplot as plt
-from scipy.special import erfc
-
-# ── Import everything we already wrote and tested ──────────────────────────
+# ── Import everything──────────────────────────
 from BPSK  import bpsk_modulate, bpsk_demodulate, compute_ber, theoretical_ber_bpsk
 from QPSK  import qpsk_modulate, qpsk_demodulate, theoretical_ber_qpsk, add_awgn_noise as awgn_qpsk
 from QAM16 import qam16_modulate, qam16_demodulate, theoretical_ber_qam16, add_awgn_noise as awgn_qam16
