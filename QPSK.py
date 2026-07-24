@@ -16,11 +16,21 @@ def qpsk_modulate(bits):
     # I is the real part, Q is the imaginary part
     symbols = I_symbols + 1j * Q_symbols
     return symbols
-
 def add_awgn_noise(symbols, EbN0_dB):
-    EbN0_linear = 10 ** (EbN0_dB / 10)
-    noise_std   = np.sqrt(1 / (2 * EbN0_linear))   # note: 1/(2*x) not (1/2)*x
-    noise = noise_std * (np.random.randn(len(symbols)) + 1j * np.random.randn(len(symbols)))
+    EbN0 = 10**(EbN0_dB/10)
+
+    Es = np.mean(np.abs(symbols)**2)   # = 2
+    k = 2                              # bits/symbol
+    Eb = Es / k
+
+    N0 = Eb / EbN0
+    sigma = np.sqrt(N0/2)
+
+    noise = sigma * (
+        np.random.randn(*symbols.shape)
+        + 1j*np.random.randn(*symbols.shape)
+    )
+
     return symbols + noise
 
 def qpsk_demodulate(received):
@@ -42,7 +52,7 @@ def theoretical_ber_qpsk(EbN0_dB_range):
 
 def run_qpsk_simulation():
     
-    N         = 100_000
+    N         = 5_000_000
     EbN0_dB   = np.arange(-4, 11, step=1)        # arange not arrange
     BER_sim   = np.zeros(len(EbN0_dB))
     

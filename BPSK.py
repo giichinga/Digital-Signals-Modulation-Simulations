@@ -1,6 +1,6 @@
-import numpy as np
-import matplotlib.pyplot as plt
-from scipy.special import erfc
+import numpy as np # type: ignore[import-not-found]
+import matplotlib.pyplot as plt # type: ignore[import-not-found]
+from scipy.special import erfc # type: ignore[import-not-found]
 
 
 def bpsk_modulate(bits):
@@ -9,10 +9,16 @@ def bpsk_modulate(bits):
 
 
 def add_awgn_noise(symbols, EbN0_dB):
-    EbN0_linear = 10 ** (EbN0_dB / 10)
-    noise_std   = np.sqrt(1 / (2 * EbN0_linear))   # note: 1/(2*x) not (1/2)*x
-    noise       = noise_std * np.random.randn(len(symbols))
+    EbN0 = 10**(EbN0_dB/10)
+
+    Es = np.mean(np.abs(symbols)**2)   # = 1 for BPSK
+    k  = 1                              # 1 bit per symbol
+    Eb = Es / k
+    N0 = Eb / EbN0
+    sigma = np.sqrt(N0/2)
+    noise = sigma * np.random.randn(len(symbols))  # real noise only, no 1j term
     return symbols + noise
+
 
 
 def bpsk_demodulate(received):
@@ -31,7 +37,7 @@ def theoretical_ber_bpsk(EbN0_dB_range):
 
 def run_bpsk_simulation():
 
-    N         = 100_000
+    N         = 5_000_000
     EbN0_dB   = np.arange(-4, 11, step=1)        # arange not arrange
     BER_sim   = np.zeros(len(EbN0_dB))
 
