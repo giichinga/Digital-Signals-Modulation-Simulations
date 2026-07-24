@@ -2,7 +2,6 @@ import numpy as np # type: ignore[import-not-found]
 import matplotlib.pyplot as plt # type: ignore[import-not-found]
 from scipy.special import erfc # type: ignore[import-not-found]
 
-
 def bpsk_modulate(bits):
     symbols = 2 * bits - 1
     return symbols

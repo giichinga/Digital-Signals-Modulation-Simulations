@@ -9,12 +9,10 @@ def qpsk_modulate(bits):
     Q_bits = bits[1::2]
     
     # Step 2: BPSK-modulate each stream independently
-    # (map 0 → -1, 1 → +1)
     I_symbols = 2 * I_bits - 1
     Q_symbols = 2 * Q_bits - 1
     
     # Step 3: combine into complex symbols
-    # I is the real part, Q is the imaginary part
     symbols = I_symbols + 1j * Q_symbols
     return symbols
 def add_awgn_noise(symbols, EbN0_dB):
@@ -76,7 +74,6 @@ def run_qpsk_simulation():
         theory_val  = 0.5 * erfc(np.sqrt(10 ** (snr / 10)))
         print(f"  {snr:>12.1f}  {BER_sim[i]:>15.6f}  {theory_val:>16.6f}")
 
-        # computed AFTER the loop, not inside it
     
     BER_theory = theoretical_ber_qpsk(EbN0_dB)
     
