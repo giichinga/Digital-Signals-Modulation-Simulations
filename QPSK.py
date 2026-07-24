@@ -24,9 +24,7 @@ def add_awgn_noise(symbols, EbN0_dB):
     return symbols + noise
 
 def qpsk_demodulate(received):
-    # YOUR CODE HERE
-    # Hint: decide I and Q independently
-    # np.real() and np.imag() will be useful
+
     I_received = np.real(received)
     Q_received = np.imag(received)
     I_bits = (I_received > 0).astype(int)
@@ -34,22 +32,15 @@ def qpsk_demodulate(received):
     return np.column_stack([I_bits, Q_bits]).flatten()
 
 def compute_ber(bits_sent, bits_received):
-    # exactly the same as BPSK — no changes needed
     errors = np.sum(bits_sent != bits_received)
     return errors / len(bits_sent)
 
 def theoretical_ber_qpsk(EbN0_dB_range):
-    # QPSK BER = same formula as BPSK per bit
-    # BER = 0.5 * erfc(sqrt(Eb/N0))
-    # YOUR CODE HERE
     EbN0_linear = 10 ** (EbN0_dB_range / 10)
     return 0.5 * erfc(np.sqrt(EbN0_linear))
     
 
 def run_qpsk_simulation():
-    # YOUR CODE HERE
-    # Same loop structure as BPSK
-    # Remember: N bits → N/2 symbols (two bits per symbol)
     
     N         = 100_000
     EbN0_dB   = np.arange(-4, 11, step=1)        # arange not arrange
@@ -66,15 +57,16 @@ def run_qpsk_simulation():
     print("-" * 50)
     
     for i, snr in enumerate(EbN0_dB):
-            bits        = np.random.randint(0, 2, N)  # N bits, but we need pairs for QPSK
-            symbols     = qpsk_modulate(bits)
-            received    = add_awgn_noise(symbols, snr)
-            bits_hat    = qpsk_demodulate(received)
-            BER_sim[i]  = compute_ber(bits, bits_hat)
-            theory_val  = 0.5 * erfc(np.sqrt(10 ** (snr / 10)))
-            print(f"  {snr:>12.1f}  {BER_sim[i]:>15.6f}  {theory_val:>16.6f}")
-    
+        bits        = np.random.randint(0, 2, N)  # N bits, but we need pairs for QPSK
+        symbols     = qpsk_modulate(bits)
+        received    = add_awgn_noise(symbols, snr)
+        bits_hat    = qpsk_demodulate(received)
+        BER_sim[i]  = compute_ber(bits, bits_hat)
+        theory_val  = 0.5 * erfc(np.sqrt(10 ** (snr / 10)))
+        print(f"  {snr:>12.1f}  {BER_sim[i]:>15.6f}  {theory_val:>16.6f}")
+
         # computed AFTER the loop, not inside it
+    
     BER_theory = theoretical_ber_qpsk(EbN0_dB)
     
     print("-" * 50)
