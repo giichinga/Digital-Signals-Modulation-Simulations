@@ -1,0 +1,22 @@
+# Virtual environment - never commit this
+venv/
+
+# TensorFlow and other compiled packages
+*.egg-info/
+__pycache__/
+*.pyc
+*.pyo
+
+# Large data files 
+*.csv
+
+# Jupyter notebook checkpoints
+.ipynb_checkpoints/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
