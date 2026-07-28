@@ -9,7 +9,7 @@ from QAM16 import qam16_modulate, qam16_demodulate, theoretical_ber_qam16, add_a
 
 
 # ── Simulation parameters ──────────────────────────────────────────────────
-EbN0_dB = np.arange(-20, 31, step=1)   # -20 dB to 30 dB covers all three schemes
+EbN0_dB = np.arange(-20, 21, step=1)   # -20 dB to 20 dB covers all three schemes
 
 # Adaptive simulation controls: instead of a single fixed N for every SNR
 # point (wasteful at low SNR, unreliable at high SNR where errors are
@@ -116,7 +116,7 @@ ax.set_title('BPSK vs QPSK vs 16-QAM — BER Performance over AWGN Channel', fon
 ax.legend(fontsize=10, loc='lower left')
 ax.grid(True, which='both', linestyle='--', alpha=0.5)
 ax.set_ylim([1e-5, 1])
-ax.set_xlim([-20, 30])
+ax.set_xlim([-20, 20])
 
 # ── Key insight printed to terminal ───────────────────────────────────────
 print()
