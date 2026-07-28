@@ -1,6 +1,9 @@
-import numpy as np # type: ignore[import-not-found]
-import matplotlib.pyplot as plt # type: ignore[import-not-found]
-from scipy.special import erfc # type: ignore[import-not-found]
+import numpy as np  # type: ignore[import-not-found]
+import matplotlib.pyplot as plt  # type: ignore[import-not-found]
+from scipy.special import erfc  # type: ignore[import-not-found]
+
+from sim_utils import simulate_ber_adaptive
+
 
 def bpsk_modulate(bits):
     symbols = 2 * bits - 1
@@ -8,16 +11,35 @@ def bpsk_modulate(bits):
 
 
 def add_awgn_noise(symbols, EbN0_dB):
-    EbN0 = 10**(EbN0_dB/10)
+    EbN0 = 10 ** (EbN0_dB / 10)
 
-    Es = np.mean(np.abs(symbols)**2)   # = 1 for BPSK
-    k  = 1                              # 1 bit per symbol
+    Es = np.mean(np.abs(symbols) ** 2)
+    k = 1
     Eb = Es / k
     N0 = Eb / EbN0
-    sigma = np.sqrt(N0/2)
-    noise = sigma * np.random.randn(len(symbols))  # real noise only, no 1j term
+
+    sigma = np.sqrt(N0 / 2)
+
+    noise = sigma * np.random.randn(len(symbols))
+
     return symbols + noise
 
+
+# -------------------------------------------------
+# NEW FUNCTION FOR MACHINE LEARNING DATASET
+# -------------------------------------------------
+def bpsk_transmit(bits, EbN0_dB):
+    """
+    Modulate bits and pass through AWGN channel.
+
+    Returns
+    -------
+    symbols : transmitted symbols
+    received : noisy received symbols
+    """
+    symbols = bpsk_modulate(bits)
+    received = add_awgn_noise(symbols, EbN0_dB)
+    return symbols, received
 
 
 def bpsk_demodulate(received):
@@ -36,48 +58,62 @@ def theoretical_ber_bpsk(EbN0_dB_range):
 
 def run_bpsk_simulation():
 
-    N         = 5_000_000
-    EbN0_dB   = np.arange(-4, 11, step=1)        # arange not arrange
-    BER_sim   = np.zeros(len(EbN0_dB))
+    EbN0_dB = np.arange(-20, 21, 1)
 
-    print("=" * 50)
-    print("  BPSK Simulation over AWGN Channel")
-    print("=" * 50)
-    print(f"  Bits per SNR point : {N:,}")
-    print(f"  SNR range          : {EbN0_dB[0]} dB to {EbN0_dB[-1]} dB")
-    print("-" * 50)
-    print(f"  {'Eb/N0 (dB)':>12}  {'Simulated BER':>15}  {'Theoretical BER':>16}")
-    print("-" * 50)
+    BER_sim   = np.zeros(len(EbN0_dB))
+    bits_used = np.zeros(len(EbN0_dB), dtype=np.int64)
+
+    print("=" * 60)
+    print("BPSK Simulation  (adaptive bit count per SNR point)")
+    print("=" * 60)
 
     for i, snr in enumerate(EbN0_dB):
-        bits        = np.random.randint(0, 2, N)
-        symbols     = bpsk_modulate(bits)
-        received    = add_awgn_noise(symbols, snr)
-        bits_hat    = bpsk_demodulate(received)
-        BER_sim[i]  = compute_ber(bits, bits_hat)
-        theory_val  = 0.5 * erfc(np.sqrt(10 ** (snr / 10)))
-        print(f"  {snr:>12.1f}  {BER_sim[i]:>15.6f}  {theory_val:>16.6f}")
 
-    # computed AFTER the loop, not inside it
-    BER_theory = theoretical_ber_bpsk(EbN0_dB)
+        ber, total_bits, total_errors = simulate_ber_adaptive(
+            bpsk_modulate, bpsk_demodulate, add_awgn_noise, snr,
+            bits_multiple=1,
+        )
+        BER_sim[i]   = ber
+        bits_used[i] = total_bits
 
-    print("-" * 50)
-    print("  Simulation complete. Plotting...")
+        theory = 0.5 * erfc(np.sqrt(10 ** (snr / 10)))
 
-    # --- Plot --- all inside the function, so variables are in scope
-    fig, ax = plt.subplots(figsize=(8, 5))
-    ax.semilogy(EbN0_dB, BER_sim,    'bo-', label='Simulated BER',   markersize=6)
-    ax.semilogy(EbN0_dB, BER_theory, 'r--', label='Theoretical BER', linewidth=2)
-    ax.set_xlabel('Eb/N0 (dB)',           fontsize=12)
-    ax.set_ylabel('Bit Error Rate (BER)', fontsize=12)
-    ax.set_title('BPSK Performance over AWGN Channel', fontsize=13)
-    ax.legend(fontsize=11)
-    ax.grid(True, which='both', linestyle='--', alpha=0.6)
-    ax.set_ylim([1e-5, 1])
-    ax.set_xlim([-4, 10])
+        print(
+            f"SNR={snr:5.1f} dB   "
+            f"BER={ber:.3e}   "
+            f"Theory={theory:.3e}   "
+            f"errors={total_errors:4d}   "
+            f"bits={total_bits:,}"
+        )
+
+    # Theory curve underflows to exactly 0 for high Eb/N0 (float64 can't
+    # represent values below ~1e-308) - clip so log-scale plotting and
+    # any downstream log() calls don't choke on it.
+    BER_theory = np.clip(theoretical_ber_bpsk(EbN0_dB), 1e-300, None)
+
+    # BER_sim can be exactly 0 where no errors were observed even after
+    # hitting the max_bits cap - matplotlib's semilogy just breaks the
+    # line at those points (log(0) undefined), which is the CORRECT
+    # behaviour: it honestly shows "no error observed", not a fabricated
+    # near-zero value.
+    plt.figure(figsize=(8, 5))
+
+    plt.semilogy(EbN0_dB, BER_sim, "bo-", label="Simulation")
+    plt.semilogy(EbN0_dB, BER_theory, "r--", label="Theory")
+
+    plt.grid(True, which="both")
+    plt.legend()
+    plt.xlabel("Eb/N0 (dB)")
+    plt.ylabel("BER")
+    plt.title("BPSK over AWGN")
+
+    # Explicit, sane y-limits instead of letting matplotlib auto-scale
+    # to the theory curve's underflow tail.
+    plt.ylim(1e-7, 1)
+    plt.xlim(EbN0_dB[0], EbN0_dB[-1])
+
     plt.tight_layout()
-    plt.savefig('bpsk_ber_curve.png', dpi=150)
-    print("  Plot saved as: bpsk_ber_curve.png")
+    plt.savefig("bpsk_ber_curve.png", dpi=150)
     plt.show()
 
 
